@@ -43,8 +43,7 @@ void isr () {
   uint32_t irqs = *((uint32_t*)(VIC_BASE_ADDR+VICIRQSTATUS));
   for (uint32_t i=0 ; i<32 ; i++) {
     if (irqs & (1<<i)) {
-      handlers[i].callback (0, handlers[i].cookie);
-      *((uint32_t*)(VIC_BASE_ADDR+VICINTCLEAR)) = (1 << i);}
+      handlers[i].callback (0, handlers[i].cookie);}
   }
   return ;
 }
@@ -83,8 +82,7 @@ void vic_enable_irq(uint32_t irq, void (*callback)(uint32_t, void*), void *cooki
  * Disables the given interrupt at the VIC level.
  */
 void vic_disable_irq(uint32_t irq) {
-  struct handler*handler = &handlers[irq];
-  handler->callback = 0;
-  handler->cookie = 0;
+  handlers[irq].callback = 0;
+  handlers[irq].cookie = 0;
   *((uint32_t*)(VIC_BASE_ADDR+VICINTCLEAR)) = (1 << irq);
 }

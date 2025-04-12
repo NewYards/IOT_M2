@@ -34,7 +34,6 @@ void test1(uint32_t noirq, void* cookie){
   char c;
   uart_receive(0, &c);
   uart_send(0, c);
-
 }
 
 void test2(uint32_t noirq, void* cookie){
@@ -51,9 +50,6 @@ void _start(void) {
   check_stacks();
   uarts_init();
   uart_enable(UART0);
-
-  //uart_send_string(UART0, "\033[H\033[J >");
-
   vic_setup_irqs();
   vic_enable_irq(UART0_IRQ, test1, NULL);
   // vic_enable_irq(UART0_IRQ, test2, &c);
