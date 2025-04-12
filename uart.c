@@ -12,71 +12,73 @@
  * If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "main.h"
-#include "uart.h"
-#include "uart-mmio.h"
-
-struct uart {
-  uint8_t uartno; // the UART numéro
-  void* bar;      // base address register for this UART
-};
-
-static
-struct uart uarts[NUARTS];
-
-static
-void uart_init(uint32_t uartno, void* bar) {
-  struct uart*uart = &uarts[uartno];
-  uart->uartno = uartno;
-  uart->bar = bar;
-  // no hardware initialization necessary
-  // when running on QEMU, the UARTs are
-  // already initialized, as long as we
-  // do not rely on interrupts.
-}
-
-void uarts_init() {
-  uart_init(UART0,UART0_BASE_ADDRESS);
-  uart_init(UART1,UART1_BASE_ADDRESS);
-  uart_init(UART2,UART2_BASE_ADDRESS);
-}
-
-void uart_enable(uint32_t uartno) {
-  struct uart*uart = &uarts[uartno];
-  // nothing to do here, as long as
-  // we do not rely on interrupts
-}
-
-void uart_disable(uint32_t uartno) {
-  struct uart*uart = &uarts[uartno];
-  // nothing to do here, as long as
-  // we do not rely on interrupts
-}
-
-void uart_receive(uint8_t uartno, char *pt) {
-  struct uart*uart = &uarts[uartno];
-  while((*((uint16_t*)(uart->bar+UART_FR)) & (1 << 3)));
-  *pt = *((char*)(uart->bar+UART_DR));
-}
-
-/**
- * Sends a character through the given uart, this is a blocking call
- * until the character has been sent.
- */
-void uart_send(uint8_t uartno, char s) {
-  struct uart* uart = &uarts[uartno];
-  while((*((uint16_t*)(uart->bar+UART_FR)) & (1 << 4)));
-  *((char*)(uart->bar+UART_DR)) = s;
-}
-
-/**
- * This is a wrapper function, provided for simplicity,
- * it sends a C string through the given uart.
- */
-void uart_send_string(uint8_t uartno, const char *s) {
-  while (*s != '\0') {
-    uart_send(uartno, *s);
-    s++;
-  }
-}
-
+ #include "main.h"
+ #include "uart.h"
+ #include "uart-mmio.h"
+ 
+ struct uart {
+   uint8_t uartno; // the UART numéro
+   void* bar;      // base address register for this UART
+ };
+ 
+ static
+ struct uart uarts[NUARTS];
+ 
+ static
+ void uart_init(uint32_t uartno, void* bar) {
+   struct uart*uart = &uarts[uartno];
+   uart->uartno = uartno;
+   uart->bar = bar;
+   // no hardware initialization necessary
+   // when running on QEMU, the UARTs are
+   // already initialized, as long as we
+   // do not rely on interrupts.
+ }
+ 
+ void uarts_init() {
+   uart_init(UART0,UART0_BASE_ADDRESS);
+   uart_init(UART1,UART1_BASE_ADDRESS);
+   uart_init(UART2,UART2_BASE_ADDRESS);
+ }
+ 
+ void uart_enable(uint32_t uartno) {
+   struct uart*uart = &uarts[uartno];
+   *((uint32_t*)(uart->bar+UART_IMSC)) = *((uint32_t*)(uart->bar+UART_IMSC)) | (1<<MASK_UART_RXIM) /*| ((1<<MASK_UART_TXIM))*/;
+   // nothing to do here, as long as
+   // we do not rely on interrupts
+ }
+ 
+ void uart_disable(uint32_t uartno) {
+   struct uart*uart = &uarts[uartno];
+   *((uint32_t*)(uart->bar+UART_IMSC)) = *((uint32_t*)(uart->bar+UART_IMSC)) & ~((1<<MASK_UART_RXIM) /*|((1<<MASK_UART_TXIM))*/);
+   // nothing to do here, as long as
+   // we do not rely on interrupts
+ }
+ 
+ void uart_receive(uint8_t uartno, char *pt) {
+   struct uart*uart = &uarts[uartno];
+   while((*((uint16_t*)(uart->bar+UART_FR)) & (1 << 4)));
+   *pt = *((char*)(uart->bar+UART_DR));
+ }
+ 
+ /**
+  * Sends a character through the given uart, this is a blocking call
+  * until the character has been sent.
+  */
+ void uart_send(uint8_t uartno, char s) {
+   struct uart* uart = &uarts[uartno];
+   while((*((uint16_t*)(uart->bar+UART_FR)) & (1 << 5)));
+   *((char*)(uart->bar+UART_DR)) = s;
+ }
+ 
+ /**
+  * This is a wrapper function, provided for simplicity,
+  * it sends a C string through the given uart.
+  */
+ void uart_send_string(uint8_t uartno, const char *s) {
+   while (*s != '\0') {
+     uart_send(uartno, *s);
+     s++;
+   }
+ }
+ 

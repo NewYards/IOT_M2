@@ -13,6 +13,7 @@
  */
 #include "main.h"
 #include "uart.h"
+#include "isr.h"
 
 extern uint32_t irq_stack_top;
 extern uint32_t stack_top;
@@ -23,11 +24,21 @@ void check_stacks() {
   addr = &stack_top;
   if (addr >= memsize)
     panic();
-/*
+
   addr = &irq_stack_top;
   if (addr >= memsize)
     panic();
-*/
+}
+
+void test1(uint32_t noirq, void* cookie){
+  char c;
+  uart_receive(0, &c);
+  uart_send(0, c);
+
+}
+
+void test2(uint32_t noirq, void* cookie){
+  uart_send(0, *((char*)cookie));
 }
 
 /**
@@ -40,10 +51,16 @@ void _start(void) {
   check_stacks();
   uarts_init();
   uart_enable(UART0);
+
+  //uart_send_string(UART0, "\033[H\033[J >");
+
+  vic_setup_irqs();
+  vic_enable_irq(UART0_IRQ, test1, NULL);
+  // vic_enable_irq(UART0_IRQ, test2, &c);
+  core_enable_irqs();
   for (;;) {
-    uart_receive(UART0, &c);
-    uart_send(UART0, c);
-  }
+    core_halt();
+    }
 }
 
 void panic() {
